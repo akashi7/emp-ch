@@ -156,7 +156,7 @@ describe('AuthController', () => {
 
       jest.spyOn(authService, 'EmailForgotPassword').mockResolvedValue({
         data: {
-          message: Promise.resolve({ message: 'Email sent' }),
+          message: { message: 'Email sent successfully' },
           user: {
             email: dto.email,
             password: 'mocked-password',
@@ -177,7 +177,9 @@ describe('AuthController', () => {
 
       expect(response.body).toEqual({
         data: {
-          message: {},
+          message: {
+            message: 'Email sent successfully',
+          },
           user: {
             email: dto.email,
             password: 'mocked-password',
