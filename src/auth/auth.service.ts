@@ -58,22 +58,23 @@ export class AuthService {
   ) {
     const employees = await this.employeeRepository.find({
       relations: ['user'],
-      select: ['firstName', 'lastName'],
+      select: ['firstName', 'lastName', 'user'],
     });
+
     const resetPasswordUrl = `http://localhost:${this.config.get(
       'port',
     )}/api/v1/auth/resetPassword?token=${token}`;
 
-    employees.map((employee) => ({
-      fullName: `${employee.firstName} ${employee.lastName}`,
-    }));
+    const employee = employees.find((emp) => emp.user.id === user.id);
+
+    const fullName = `${employee.firstName} ${employee.lastName}`;
 
     const result = await this.mail.sendMail(
       `${user.email}`,
       'Reset password',
       `"No Reply" <${this.config.get('mail').from}>`,
       {
-        username: `${employees[0].firstName} ${employees[0].lastName}`,
+        username: fullName,
         verificationUrl: resetPasswordUrl,
       },
       './forgotPassword.template.hbs',

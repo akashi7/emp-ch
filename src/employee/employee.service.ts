@@ -15,6 +15,15 @@ export class EmployeeService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  async getAllEmployees() {
+    const employees = await this.employeeRepository.find({
+      relations: ['user'],
+      select: ['firstName', 'lastName'],
+    });
+
+    return employees;
+  }
+
   async update(user: User, dto: UpdateUserEmployeeDto) {
     const isUser = await this.employeeRepository.findOne({
       where: {

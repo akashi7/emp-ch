@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Patch,
   Post,
@@ -11,6 +12,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
@@ -28,8 +30,8 @@ import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { resetPasswordDto, UpdateUserEmployeeDto } from './dto';
 import { EmployeeService } from './employee.service';
 
-@Controller('employee')
-@ApiTags('employee')
+@Controller('employees')
+@ApiTags('employees')
 @UseGuards(JwtGuard, RolesGuard)
 @AllowRoles(ERoles.EMPLOYEE)
 @ApiBearerAuth()
@@ -40,6 +42,17 @@ export class EmployeeController {
     private readonly attendanceService: AttendanceService,
     private readonly employeeService: EmployeeService,
   ) {}
+
+  @AllowRoles(ERoles.ADMIN)
+  @ApiOkResponse({ description: 'Employee retrieved successfully' })
+  @ApiOperation({ summary: 'Retrieve all employees' })
+  @ApiForbiddenResponse({ description: 'Access denied must be admin' })
+  @Get('')
+  async getEmployees() {
+    const result = await this.employeeService.getAllEmployees();
+    return new GenericResponse('employees retrieved', result);
+  }
+
   @ApiCreatedResponse({ description: 'Attendance Recorded successfully' })
   @ApiOperation({ summary: 'Make attendance' })
   @Post('arrive')

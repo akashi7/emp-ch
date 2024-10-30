@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   INestApplication,
   InternalServerErrorException,
   NotFoundException,
@@ -7,6 +8,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GenericResponse } from 'src/__shared__/dto';
 import { ERoles } from 'src/__shared__/enums/enum';
 import { Employee } from 'src/__shared__/models/employee.entity';
+import { User } from 'src/__shared__/models/user.entity';
 import { AttendanceService } from 'src/attendance/attendance.service';
 import { JwtGuard } from 'src/auth/guard/jwt.guard';
 import { UpdateUserEmployeeDto, resetPasswordDto } from 'src/employee/dto';
@@ -47,6 +49,7 @@ describe('EmployeeController E2E', () => {
           useValue: {
             update: jest.fn(),
             resetPassword: jest.fn(),
+            getAllEmployees: jest.fn(),
           },
         },
       ],
@@ -67,6 +70,68 @@ describe('EmployeeController E2E', () => {
     await app.close();
   });
 
+  describe('GET /employee', () => {
+    it('should retrieve all employees successfully', async () => {
+      const mockEmployees: Employee[] = [
+        {
+          firstName: 'John',
+          lastName: 'Doe',
+          user: new User(),
+          phoneNumber: '',
+          identifier: '',
+          id: 0,
+          created_at: undefined,
+        },
+        {
+          firstName: 'Jane',
+          lastName: 'Smith',
+          user: new User(),
+          phoneNumber: '',
+          identifier: '',
+          id: 0,
+          created_at: undefined,
+        },
+      ];
+      jest
+        .spyOn(employeeService, 'getAllEmployees')
+        .mockResolvedValue(mockEmployees);
+
+      const response = await request(app.getHttpServer())
+        .get('/employees')
+        .set('Authorization', 'Bearer valid_token')
+        .expect(200);
+
+      expect(response.body).toEqual({
+        data: mockEmployees,
+        message: 'employees retrieved',
+      });
+    });
+
+    it('should throw a forbidden error if the user is not an admin', async () => {
+      jest
+        .spyOn(employeeService, 'getAllEmployees')
+        .mockRejectedValue(
+          new ForbiddenException('Access denied must be admin'),
+        );
+
+      await request(app.getHttpServer())
+        .get('/employees')
+        .set('Authorization', 'Bearer valid_token')
+        .expect(403);
+    });
+
+    it('should throw an internal server error if retrieval fails', async () => {
+      jest
+        .spyOn(employeeService, 'getAllEmployees')
+        .mockRejectedValue(new InternalServerErrorException());
+
+      await request(app.getHttpServer())
+        .get('/employees')
+        .set('Authorization', 'Bearer valid_token')
+        .expect(500);
+    });
+  });
+
   describe('POST /employee/arrive', () => {
     it('should record attendance successfully', async () => {
       jest
@@ -74,7 +139,7 @@ describe('EmployeeController E2E', () => {
         .mockResolvedValue({ message: 'Attendance recorded and email queued' });
 
       const response = await request(app.getHttpServer())
-        .post('/employee/arrive')
+        .post('/employees/arrive')
         .set('Authorization', 'Bearer valid_token')
         .send({ user })
         .expect(201);
@@ -91,7 +156,7 @@ describe('EmployeeController E2E', () => {
         .mockRejectedValue(new InternalServerErrorException());
 
       await request(app.getHttpServer())
-        .post('/employee/arrive')
+        .post('/employees/arrive')
         .set('Authorization', 'Bearer valid_token')
         .expect(500);
     });
@@ -105,7 +170,7 @@ describe('EmployeeController E2E', () => {
         .mockResolvedValue({ message: 'Attendance recorded and email queued' });
 
       const response = await request(app.getHttpServer())
-        .patch('/employee/depart')
+        .patch('/employees/depart')
         .set('Authorization', 'Bearer valid_token')
         .query({ id: attendanceId })
         .expect(200);
@@ -125,7 +190,7 @@ describe('EmployeeController E2E', () => {
         );
 
       await request(app.getHttpServer())
-        .patch('/employee/depart')
+        .patch('/employees/depart')
         .set('Authorization', 'Bearer valid_token')
         .query({ id: attendanceId })
         .expect(404);
@@ -146,7 +211,7 @@ describe('EmployeeController E2E', () => {
         .mockResolvedValue(Promise.resolve());
 
       const response = await request(app.getHttpServer())
-        .patch('/employee/update')
+        .patch('/employees/update')
         .set('Authorization', 'Bearer valid_token')
         .send(dto)
         .expect(200);
@@ -167,7 +232,7 @@ describe('EmployeeController E2E', () => {
         .mockRejectedValue(new InternalServerErrorException());
 
       await request(app.getHttpServer())
-        .patch('/employee/update')
+        .patch('/employees/update')
         .set('Authorization', 'Bearer valid_token')
         .send(dto)
         .expect(500);
@@ -183,7 +248,7 @@ describe('EmployeeController E2E', () => {
       jest.spyOn(employeeService, 'resetPassword').mockResolvedValue(undefined);
 
       const response = await request(app.getHttpServer())
-        .patch('/employee/reset-password')
+        .patch('/employees/reset-password')
         .set('Authorization', 'Bearer valid_token')
         .send(dto)
         .expect(200);
@@ -203,7 +268,7 @@ describe('EmployeeController E2E', () => {
         .mockRejectedValue(new InternalServerErrorException());
 
       await request(app.getHttpServer())
-        .patch('/employee/reset-password')
+        .patch('/employees/reset-password')
         .set('Authorization', 'Bearer valid_token')
         .send(dto)
         .expect(500);
