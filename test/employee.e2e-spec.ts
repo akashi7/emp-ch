@@ -7,6 +7,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { GenericResponse } from 'src/__shared__/dto';
 import { ERoles } from 'src/__shared__/enums/enum';
+import { Attendance } from 'src/__shared__/models/attendance.entity';
 import { Employee } from 'src/__shared__/models/employee.entity';
 import { User } from 'src/__shared__/models/user.entity';
 import { AttendanceService } from 'src/attendance/attendance.service';
@@ -134,9 +135,15 @@ describe('EmployeeController E2E', () => {
 
   describe('POST /employee/arrive', () => {
     it('should record attendance successfully', async () => {
+      const attendanceMock: Attendance = {
+        id: 1,
+        user: new User(),
+        arrivalTime: undefined,
+        leaveTime: undefined,
+      };
       jest
         .spyOn(attendanceService, 'entrance')
-        .mockResolvedValue({ message: 'Attendance recorded and email queued' });
+        .mockResolvedValue(attendanceMock);
 
       const response = await request(app.getHttpServer())
         .post('/employees/arrive')
@@ -145,7 +152,12 @@ describe('EmployeeController E2E', () => {
         .expect(201);
 
       expect(response.body).toEqual({
-        data: { message: 'Attendance recorded and email queued' },
+        data: {
+          user: new User(),
+          id: 1,
+          arrivalTime: undefined,
+          leaveTime: undefined,
+        },
         message: 'attendance recorded',
       });
     });
