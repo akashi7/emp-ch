@@ -44,8 +44,7 @@ export class AttendanceService {
       template: './default.template.hbs',
     });
 
-    await this.attendanceRepository.save(attendance);
-    return { message: 'Attendance recorded and email queued' };
+    return await this.attendanceRepository.save(attendance);
   }
 
   async leaveTime(id: number, user: User) {
